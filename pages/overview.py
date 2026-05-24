@@ -3,16 +3,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 from utils.data_generator import generate_transactions, get_summary_stats
-
-COLORS = {
-    "primary": "#1a56db",
-    "danger": "#e02424",
-    "warning": "#e3a008",
-    "success": "#057a55",
-    "neutral": "#6b7280",
-    "bg": "#f4f6f9",
-    "card": "#ffffff",
-}
+from utils.chart_theme import apply_theme
 
 def render(date_range, risk_filter):
     df = generate_transactions(500, date_range)
@@ -26,7 +17,6 @@ def render(date_range, risk_filter):
     st.markdown("## 📊 Fraud Detection Overview")
     st.caption(f"Showing data for **{date_range}** · {stats['total_transactions']:,} transactions analyzed")
 
-    # KPI Row
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"""
@@ -35,7 +25,6 @@ def render(date_range, risk_filter):
             <div class="value">{stats['fraud_rate']}%</div>
             <div class="delta up">▲ +0.3% vs prior period</div>
         </div>""", unsafe_allow_html=True)
-
     with c2:
         st.markdown(f"""
         <div class="metric-card warning">
@@ -43,7 +32,6 @@ def render(date_range, risk_filter):
             <div class="value">{stats['flagged_transactions']:,}</div>
             <div class="delta">of {stats['total_transactions']:,} total</div>
         </div>""", unsafe_allow_html=True)
-
     with c3:
         st.markdown(f"""
         <div class="metric-card danger">
@@ -51,7 +39,6 @@ def render(date_range, risk_filter):
             <div class="value">${stats['fraud_amount']:,.0f}</div>
             <div class="delta up">{stats['fraud_amount_pct']}% of total volume</div>
         </div>""", unsafe_allow_html=True)
-
     with c4:
         st.markdown(f"""
         <div class="metric-card success">
@@ -62,7 +49,6 @@ def render(date_range, risk_filter):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Row 2: Trend + Risk Distribution
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -77,24 +63,19 @@ def render(date_range, risk_filter):
         fig.add_trace(go.Bar(
             x=daily["date"], y=daily["total"],
             name="Total Transactions",
-            marker_color="#bfdbfe",
-            opacity=0.8
+            marker_color="#3b82f6", opacity=0.7
         ))
         fig.add_trace(go.Scatter(
             x=daily["date"], y=daily["fraud"],
             name="Fraudulent",
-            line=dict(color="#e02424", width=2.5),
+            line=dict(color="#f87171", width=2.5),
             mode="lines+markers",
             marker=dict(size=5)
         ))
-        fig.update_layout(
-            plot_bgcolor="white", paper_bgcolor="white",
-            height=280, margin=dict(l=0, r=0, t=10, b=0),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-            xaxis=dict(showgrid=False),
-            yaxis=dict(gridcolor="#f3f4f6"),
-            font=dict(family="IBM Plex Sans"),
-        )
+        apply_theme(fig, height=280,
+                    xaxis=dict(gridcolor="#2d3f55", linecolor="#2d3f55", tickfont=dict(color="#94a3b8")),
+                    yaxis=dict(gridcolor="#2d3f55", linecolor="#2d3f55", tickfont=dict(color="#94a3b8")),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, font=dict(color="#e2e8f0")))
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -104,21 +85,17 @@ def render(date_range, risk_filter):
             labels=risk_counts.index,
             values=risk_counts.values,
             hole=0.62,
-            marker_colors=["#e02424", "#e3a008", "#057a55"],
+            marker_colors=["#f87171", "#fbbf24", "#34d399"],
             textinfo="percent",
-            textfont_size=13,
+            textfont=dict(size=13, color="#ffffff"),
         ))
-        fig2.update_layout(
-            height=280, margin=dict(l=0, r=0, t=10, b=0),
-            paper_bgcolor="white",
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.15),
-            font=dict(family="IBM Plex Sans"),
-            annotations=[dict(text=f"<b>{stats['flagged_transactions']}</b><br>Flagged", x=0.5, y=0.5, font_size=14, showarrow=False)]
-        )
+        apply_theme(fig2, height=280,
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.15, font=dict(color="#e2e8f0")),
+                    annotations=[dict(text=f"<b>{stats['flagged_transactions']}</b><br>Flagged",
+                                      x=0.5, y=0.5, font=dict(size=14, color="#e2e8f0"), showarrow=False)])
         st.plotly_chart(fig2, use_container_width=True)
 
-    # Row 3: Top merchants + Geo heatmap
     col3, col4 = st.columns([1, 1])
 
     with col3:
@@ -133,16 +110,12 @@ def render(date_range, risk_filter):
             x=fraud_merchants.values,
             y=fraud_merchants.index,
             orientation="h",
-            marker_color=COLORS["danger"],
+            marker_color="#f87171",
             opacity=0.85,
         ))
-        fig3.update_layout(
-            height=280, plot_bgcolor="white", paper_bgcolor="white",
-            margin=dict(l=0, r=0, t=10, b=0),
-            xaxis=dict(gridcolor="#f3f4f6", title="Fraud Amount ($)"),
-            yaxis=dict(showgrid=False),
-            font=dict(family="IBM Plex Sans", size=12),
-        )
+        apply_theme(fig3, height=280,
+                    xaxis=dict(gridcolor="#2d3f55", title="Fraud Amount ($)", title_font=dict(color="#cbd5e1"), tickfont=dict(color="#94a3b8")),
+                    yaxis=dict(showgrid=False, tickfont=dict(color="#cbd5e1")))
         st.plotly_chart(fig3, use_container_width=True)
 
     with col4:
@@ -151,19 +124,20 @@ def render(date_range, risk_filter):
         fig4 = px.choropleth(
             country_fraud, locations="country",
             color="count",
-            color_continuous_scale=["#fde8e8", "#e02424"],
+            color_continuous_scale=["#2d3f55", "#f87171"],
             locationmode="ISO-3",
         )
         fig4.update_layout(
             height=280, margin=dict(l=0, r=0, t=10, b=0),
-            paper_bgcolor="white",
-            geo=dict(showframe=False, showcoastlines=True, bgcolor="white"),
+            paper_bgcolor="#1a2332",
+            geo=dict(showframe=False, showcoastlines=True, bgcolor="#1a2332",
+                     landcolor="#2d3f55", oceancolor="#1a2332", showocean=True,
+                     coastlinecolor="#4a5568"),
             coloraxis_showscale=False,
-            font=dict(family="IBM Plex Sans"),
+            font=dict(family="IBM Plex Sans", color="#e2e8f0"),
         )
         st.plotly_chart(fig4, use_container_width=True)
 
-    # Recent high-risk transactions
     st.markdown('<div class="section-title">Recent High-Risk Transactions</div>', unsafe_allow_html=True)
     recent_high = df_filtered[df_filtered["risk_level"] == "High"].head(8)[[
         "transaction_id", "timestamp", "merchant", "amount", "country", "risk_score", "status"

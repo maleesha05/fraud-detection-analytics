@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 from utils.data_generator import generate_transactions
+from utils.chart_theme import apply_theme
 
 
 def render(date_range, risk_filter):
@@ -12,7 +13,6 @@ def render(date_range, risk_filter):
     st.markdown("## 🔍 Transaction Monitor")
     st.caption("Real-time transaction screening and investigation")
 
-    # Search & filter bar
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     with col1:
         search = st.text_input("Search by Transaction ID or Account", placeholder="TXN... or ACC...")
@@ -23,7 +23,6 @@ def render(date_range, risk_filter):
     with col4:
         min_amt, max_amt = st.slider("Amount Range ($)", 0, 50000, (0, 50000), step=100)
 
-    # Apply filters
     filtered = df.copy()
     if search:
         filtered = filtered[
@@ -36,7 +35,6 @@ def render(date_range, risk_filter):
         filtered = filtered[filtered["transaction_type"] == txn_type]
     filtered = filtered[(filtered["amount"] >= min_amt) & (filtered["amount"] <= max_amt)]
 
-    # Stats row
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Showing", f"{len(filtered):,} transactions")
     c2.metric("Blocked", filtered[filtered["status"] == "Blocked"].shape[0], delta_color="inverse")
@@ -45,9 +43,8 @@ def render(date_range, risk_filter):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Scatter: Amount vs Risk Score
     st.markdown('<div class="section-title">Risk Score vs. Transaction Amount</div>', unsafe_allow_html=True)
-    color_map = {"High": "#e02424", "Medium": "#e3a008", "Low": "#057a55"}
+    color_map = {"High": "#f87171", "Medium": "#fbbf24", "Low": "#34d399"}
     sample = filtered.sample(min(300, len(filtered)))
     fig = go.Figure()
     for level, color in color_map.items():
@@ -56,21 +53,16 @@ def render(date_range, risk_filter):
             x=sub["amount"], y=sub["risk_score"],
             mode="markers",
             name=level,
-            marker=dict(color=color, size=6, opacity=0.7),
+            marker=dict(color=color, size=6, opacity=0.8),
             text=sub["transaction_id"],
             hovertemplate="<b>%{text}</b><br>Amount: $%{x:,.2f}<br>Risk: %{y}<extra></extra>"
         ))
-    fig.update_layout(
-        height=300, plot_bgcolor="white", paper_bgcolor="white",
-        margin=dict(l=0, r=0, t=10, b=0),
-        xaxis=dict(title="Amount ($)", gridcolor="#f3f4f6"),
-        yaxis=dict(title="Risk Score", gridcolor="#f3f4f6"),
-        legend=dict(orientation="h", y=1.1),
-        font=dict(family="IBM Plex Sans"),
-    )
+    apply_theme(fig, height=300,
+                xaxis=dict(gridcolor="#2d3f55", title="Amount ($)", title_font=dict(color="#cbd5e1"), tickfont=dict(color="#94a3b8")),
+                yaxis=dict(gridcolor="#2d3f55", title="Risk Score", title_font=dict(color="#cbd5e1"), tickfont=dict(color="#94a3b8")),
+                legend=dict(orientation="h", y=1.1, font=dict(color="#e2e8f0")))
     st.plotly_chart(fig, use_container_width=True)
 
-    # Transaction table
     st.markdown('<div class="section-title">Transaction Log</div>', unsafe_allow_html=True)
 
     display = filtered[[
@@ -101,8 +93,7 @@ def render(date_range, risk_filter):
     )
 
     if len(filtered) > 100:
-        st.caption(f"Showing first 100 of {len(filtered):,} results. Apply filters to narrow down.")
+        st.caption(f"Showing first 100 of {len(filtered):,} results.")
 
-    # Download
     csv = filtered.to_csv(index=False)
     st.download_button("⬇️ Export to CSV", csv, "transactions.csv", "text/csv")
