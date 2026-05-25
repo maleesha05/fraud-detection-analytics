@@ -6,16 +6,20 @@ from utils.data_generator import generate_transactions
 CARD = "#111827"
 GRID = "#1e2d3d"
 
-def chart_layout(fig, height=300, **kw):
-    fig.update_layout(
+def apply_dark(fig, height=300, margin=None, extra=None):
+    m = margin or dict(l=10, r=10, t=20, b=10)
+    layout = dict(
         height=height, plot_bgcolor=CARD, paper_bgcolor=CARD,
-        margin=dict(l=10, r=10, t=20, b=10),
-        font=dict(family="Inter", color="#94a3b8", size=12),
+        margin=m, font=dict(family="Inter", color="#94a3b8", size=12),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8")),
-        **kw
     )
-    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
+    if extra:
+        layout.update(extra)
+    fig.update_layout(**layout)
+    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
+    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
     return fig
 
 def render(date_range, risk_filter):
@@ -51,10 +55,10 @@ def render(date_range, risk_filter):
 
     c1, c2, c3, c4 = st.columns(4)
     for col, label, value, color in [
-        (c1, "Showing",      f"{len(filtered):,} txns",                               "#6366f1"),
-        (c2, "Blocked",      str(filtered[filtered["status"]=="Blocked"].shape[0]),    "#ef4444"),
+        (c1, "Showing",      f"{len(filtered):,} txns",                                "#6366f1"),
+        (c2, "Blocked",      str(filtered[filtered["status"]=="Blocked"].shape[0]),     "#ef4444"),
         (c3, "Under Review", str(filtered[filtered["status"]=="Under Review"].shape[0]),"#f59e0b"),
-        (c4, "Total Volume", f"${filtered['amount'].sum():,.0f}",                      "#10b981"),
+        (c4, "Total Volume", f"${filtered['amount'].sum():,.0f}",                       "#10b981"),
     ]:
         with col:
             st.markdown(f"""
@@ -76,10 +80,14 @@ def render(date_range, risk_filter):
             text=sub["transaction_id"],
             hovertemplate="<b>%{text}</b><br>Amount: $%{x:,.2f}<br>Risk Score: %{y}<extra></extra>"
         ))
-    chart_layout(fig, height=300,
-                 xaxis=dict(gridcolor=GRID, title="Amount ($)", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                 yaxis=dict(gridcolor=GRID, title="Risk Score", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                 legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8")))
+    apply_dark(fig, height=300,
+               extra=dict(
+                   xaxis=dict(title="Amount ($)", gridcolor=GRID, linecolor=GRID,
+                              tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                   yaxis=dict(title="Risk Score", gridcolor=GRID, linecolor=GRID,
+                              tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                   legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8"))
+               ))
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">Transaction Log</div>', unsafe_allow_html=True)
@@ -93,7 +101,8 @@ def render(date_range, risk_filter):
     display.columns = ["Txn ID","Time","Account","Merchant","Type","Amount",
                         "Country","Card","Risk Score","Risk Level","Velocity","Geo Mismatch","Status"]
     st.dataframe(display.head(100), use_container_width=True, hide_index=True,
-                 column_config={"Risk Score": st.column_config.ProgressColumn("Risk Score", min_value=0, max_value=100, format="%d")})
+                 column_config={"Risk Score": st.column_config.ProgressColumn(
+                     "Risk Score", min_value=0, max_value=100, format="%d")})
     if len(filtered) > 100:
         st.caption(f"Showing first 100 of {len(filtered):,} results.")
     st.download_button("⬇️ Export CSV", filtered.to_csv(index=False), "transactions.csv", "text/csv")

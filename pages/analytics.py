@@ -6,16 +6,20 @@ from utils.data_generator import generate_transactions
 CARD = "#111827"
 GRID = "#1e2d3d"
 
-def chart_layout(fig, height=300, **kw):
-    fig.update_layout(
+def apply_dark(fig, height=300, margin=None, extra=None):
+    m = margin or dict(l=10, r=10, t=20, b=10)
+    layout = dict(
         height=height, plot_bgcolor=CARD, paper_bgcolor=CARD,
-        margin=dict(l=10, r=10, t=20, b=10),
-        font=dict(family="Inter", color="#94a3b8", size=12),
+        margin=m, font=dict(family="Inter", color="#94a3b8", size=12),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8")),
-        **kw
     )
-    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
+    if extra:
+        layout.update(extra)
+    fig.update_layout(**layout)
+    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
+    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
     return fig
 
 def render(date_range):
@@ -43,10 +47,12 @@ def render(date_range):
                       title=dict(text="Count", font=dict(color="#94a3b8"))),
         hovertemplate="<b>%{y}</b> at %{x}:00<br>%{z} fraud events<extra></extra>"
     ))
-    chart_layout(fig, height=290,
-                 xaxis=dict(gridcolor=GRID, title="Hour of Day", dtick=2,
-                            title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                 yaxis=dict(gridcolor=GRID, tickfont=dict(color="#94a3b8")))
+    apply_dark(fig, height=290,
+               extra=dict(
+                   xaxis=dict(title="Hour of Day", dtick=2, gridcolor=GRID, linecolor=GRID,
+                              tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                   yaxis=dict(gridcolor=GRID, tickfont=dict(color="#94a3b8"))
+               ))
     st.plotly_chart(fig, use_container_width=True)
 
     col1, col2 = st.columns(2)
@@ -59,17 +65,21 @@ def render(date_range):
                               marker_color="#6366f1", opacity=0.3))
         fig2.add_trace(go.Bar(name="Fraudulent", x=ts["transaction_type"], y=ts["fraud"],
                               marker_color="#ef4444", opacity=0.9))
-        chart_layout(fig2, height=290, barmode="overlay",
-                     margin=dict(l=10,r=10,t=20,b=70),
-                     xaxis=dict(gridcolor=GRID, tickangle=-20, tickfont=dict(color="#64748b")),
-                     yaxis=dict(gridcolor=GRID, tickfont=dict(color="#64748b")),
-                     legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8")))
+        apply_dark(fig2, height=290,
+                   margin=dict(l=10, r=10, t=20, b=70),
+                   extra=dict(
+                       barmode="overlay",
+                       xaxis=dict(tickangle=-20, gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#64748b")),
+                       yaxis=dict(gridcolor=GRID, tickfont=dict(color="#64748b")),
+                       legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8"))
+                   ))
         st.plotly_chart(fig2, use_container_width=True)
 
     with col2:
         st.markdown('<div class="section-title">Fraud Rate by Card Type</div>', unsafe_allow_html=True)
         cs = df.groupby("card_type").agg(total=("is_fraud","count"), fraud=("is_fraud","sum")).reset_index()
-        cs["rate"] = (cs["fraud"]/cs["total"]*100).round(1)
+        cs["rate"] = (cs["fraud"] / cs["total"] * 100).round(1)
         fig3 = go.Figure(go.Bar(
             x=cs["card_type"], y=cs["rate"],
             marker=dict(color=["#6366f1","#ef4444","#10b981","#f59e0b"],
@@ -78,10 +88,12 @@ def render(date_range):
             textposition="outside", textfont=dict(color="#e2e8f0", size=12),
             hovertemplate="<b>%{x}</b><br>Fraud Rate: %{y}%<extra></extra>"
         ))
-        chart_layout(fig3, height=290,
-                     xaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8")),
-                     yaxis=dict(gridcolor=GRID, title="Fraud Rate (%)",
-                                title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")))
+        apply_dark(fig3, height=290,
+                   extra=dict(
+                       xaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8")),
+                       yaxis=dict(title="Fraud Rate (%)", gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
+                   ))
         st.plotly_chart(fig3, use_container_width=True)
 
     st.markdown('<div class="section-title">Amount Distribution — Legitimate vs Fraudulent</div>', unsafe_allow_html=True)
@@ -90,10 +102,15 @@ def render(date_range):
                                 nbinsx=60, marker_color="#6366f1", opacity=0.5))
     fig4.add_trace(go.Histogram(x=df[df["is_fraud"]]["amount"].clip(0,5000), name="Fraudulent",
                                 nbinsx=60, marker_color="#ef4444", opacity=0.7))
-    chart_layout(fig4, height=280, barmode="overlay",
-                 xaxis=dict(gridcolor=GRID, title="Amount ($)", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                 yaxis=dict(gridcolor=GRID, title="Count", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                 legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8")))
+    apply_dark(fig4, height=280,
+               extra=dict(
+                   barmode="overlay",
+                   xaxis=dict(title="Amount ($)", gridcolor=GRID, linecolor=GRID,
+                              tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                   yaxis=dict(title="Count", gridcolor=GRID, linecolor=GRID,
+                              tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                   legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8"))
+               ))
     st.plotly_chart(fig4, use_container_width=True)
 
     st.markdown('<div class="section-title">Automated Insights</div>', unsafe_allow_html=True)

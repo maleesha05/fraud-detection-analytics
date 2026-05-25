@@ -4,20 +4,23 @@ import plotly.express as px
 import pandas as pd
 from utils.data_generator import generate_transactions, get_summary_stats
 
-BG = "#0a0f1e"
 CARD = "#111827"
 GRID = "#1e2d3d"
 
-def chart_layout(fig, height=300, **kw):
-    fig.update_layout(
+def apply_dark(fig, height=300, margin=None, extra=None):
+    m = margin or dict(l=10, r=10, t=20, b=10)
+    layout = dict(
         height=height, plot_bgcolor=CARD, paper_bgcolor=CARD,
-        margin=dict(l=10, r=10, t=20, b=10),
-        font=dict(family="Inter", color="#94a3b8", size=12),
+        margin=m, font=dict(family="Inter", color="#94a3b8", size=12),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8")),
-        **kw
     )
-    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
+    if extra:
+        layout.update(extra)
+    fig.update_layout(**layout)
+    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
+    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
     return fig
 
 def render(date_range, risk_filter):
@@ -33,10 +36,10 @@ def render(date_range, risk_filter):
 
     c1, c2, c3, c4 = st.columns(4)
     cards = [
-        (c1, "red",   "Fraud Rate",           f"{stats['fraud_rate']}%",           "up",   "▲ +0.3% vs prior period"),
-        (c2, "amber", "Flagged Transactions",  f"{stats['flagged_transactions']:,}", "",     f"of {stats['total_transactions']:,} total"),
-        (c3, "red",   "Fraud Amount",          f"${stats['fraud_amount']:,.0f}",    "up",   f"{stats['fraud_amount_pct']}% of total volume"),
-        (c4, "green", "Avg Risk Score",        f"{stats['avg_risk_score']}",        "down", "▼ -2.1 vs prior period"),
+        (c1, "red",   "Fraud Rate",          f"{stats['fraud_rate']}%",           "up",   "▲ +0.3% vs prior period"),
+        (c2, "amber", "Flagged Transactions", f"{stats['flagged_transactions']:,}", "",     f"of {stats['total_transactions']:,} total"),
+        (c3, "red",   "Fraud Amount",         f"${stats['fraud_amount']:,.0f}",    "up",   f"{stats['fraud_amount_pct']}% of total volume"),
+        (c4, "green", "Avg Risk Score",       f"{stats['avg_risk_score']}",        "down", "▼ -2.1 vs prior period"),
     ]
     for col, color, label, value, delta_cls, delta_text in cards:
         with col:
@@ -61,8 +64,9 @@ def render(date_range, risk_filter):
                                  line=dict(color="#ef4444", width=2.5), mode="lines+markers",
                                  marker=dict(size=5, color="#ef4444"),
                                  hovertemplate="%{y} fraud<extra></extra>"))
-        chart_layout(fig, height=290,
-                     legend=dict(orientation="h", y=1.12, x=0, bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8")))
+        apply_dark(fig, height=290,
+                   extra=dict(legend=dict(orientation="h", y=1.12, x=0,
+                                          bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8"))))
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -73,13 +77,14 @@ def render(date_range, risk_filter):
             marker=dict(colors=["#ef4444","#f59e0b","#10b981"],
                         line=dict(color=CARD, width=3)),
             textinfo="percent", textfont=dict(size=12, color="#ffffff"),
-            hovertemplate="<b>%{label}</b><br>%{value} txns (%{percent})<extra></extra>"
         ))
-        chart_layout(fig2, height=290,
-                     showlegend=True,
-                     legend=dict(orientation="h", y=-0.1, font=dict(color="#94a3b8")),
-                     annotations=[dict(text=f"<b>{stats['flagged_transactions']}</b><br>Flagged",
-                                       x=0.5, y=0.5, font=dict(size=14, color="#e2e8f0"), showarrow=False)])
+        apply_dark(fig2, height=290,
+                   extra=dict(
+                       showlegend=True,
+                       legend=dict(orientation="h", y=-0.1, font=dict(color="#94a3b8")),
+                       annotations=[dict(text=f"<b>{stats['flagged_transactions']}</b><br>Flagged",
+                                         x=0.5, y=0.5, font=dict(size=14, color="#e2e8f0"), showarrow=False)]
+                   ))
         st.plotly_chart(fig2, use_container_width=True)
 
     col3, col4 = st.columns(2)
@@ -92,9 +97,12 @@ def render(date_range, risk_filter):
             marker=dict(color=fm.values, colorscale=[[0,"#7f1d1d"],[1,"#ef4444"]], showscale=False),
             hovertemplate="<b>%{y}</b><br>$%{x:,.0f}<extra></extra>"
         ))
-        chart_layout(fig3, height=290,
-                     xaxis=dict(gridcolor=GRID, title="Fraud Amount ($)", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                     yaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8")))
+        apply_dark(fig3, height=290,
+                   extra=dict(
+                       xaxis=dict(title="Fraud Amount ($)", gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                       yaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8"))
+                   ))
         st.plotly_chart(fig3, use_container_width=True)
 
     with col4:
