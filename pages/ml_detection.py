@@ -7,16 +7,20 @@ from utils.data_generator import generate_transactions
 CARD = "#111827"
 GRID = "#1e2d3d"
 
-def chart_layout(fig, height=300, **kw):
-    fig.update_layout(
+def apply_dark(fig, height=300, margin=None, extra=None):
+    m = margin or dict(l=10, r=10, t=20, b=10)
+    layout = dict(
         height=height, plot_bgcolor=CARD, paper_bgcolor=CARD,
-        margin=dict(l=10, r=10, t=20, b=10),
-        font=dict(family="Inter", color="#94a3b8", size=12),
+        margin=m, font=dict(family="Inter", color="#94a3b8", size=12),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8")),
-        **kw
     )
-    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False)
+    if extra:
+        layout.update(extra)
+    fig.update_layout(**layout)
+    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
+    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, zeroline=False,
+                     tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"))
     return fig
 
 def render():
@@ -29,21 +33,30 @@ def render():
     tabs = st.tabs(["📊 Model Performance", "🔬 Predict Transaction", "📉 Feature Importance"])
 
     with tabs[0]:
-        col1, col2 = st.columns([2,1])
+        col1, col2 = st.columns([2, 1])
+
         with col1:
             st.markdown('<div class="section-title">ROC Curve — Random Forest</div>', unsafe_allow_html=True)
-            fpr = np.linspace(0,1,100)
-            tpr = np.clip(np.sort(1-np.exp(-4.5*fpr)+np.random.normal(0,0.01,100)),0,1)
+            fpr = np.linspace(0, 1, 100)
+            tpr = np.clip(np.sort(1 - np.exp(-4.5 * fpr) + np.random.normal(0, 0.01, 100)), 0, 1)
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=fpr, y=tpr, name="Random Forest (AUC=0.943)",
-                                     line=dict(color="#6366f1", width=2.5),
-                                     fill="tozeroy", fillcolor="rgba(99,102,241,0.08)"))
-            fig.add_trace(go.Scatter(x=[0,1], y=[0,1], name="Baseline",
-                                     line=dict(color="#334155", dash="dash", width=1.5)))
-            chart_layout(fig, height=300,
-                         xaxis=dict(gridcolor=GRID, title="False Positive Rate", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                         yaxis=dict(gridcolor=GRID, title="True Positive Rate", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                         legend=dict(orientation="h", y=1.12, font=dict(color="#94a3b8")))
+            fig.add_trace(go.Scatter(
+                x=fpr, y=tpr, name="Random Forest (AUC=0.943)",
+                line=dict(color="#6366f1", width=2.5),
+                fill="tozeroy", fillcolor="rgba(99,102,241,0.08)"
+            ))
+            fig.add_trace(go.Scatter(
+                x=[0, 1], y=[0, 1], name="Baseline",
+                line=dict(color="#334155", dash="dash", width=1.5)
+            ))
+            apply_dark(fig, height=300,
+                       extra=dict(
+                           xaxis=dict(title="False Positive Rate", gridcolor=GRID, linecolor=GRID,
+                                      tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False),
+                           yaxis=dict(title="True Positive Rate", gridcolor=GRID, linecolor=GRID,
+                                      tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8"), zeroline=False),
+                           legend=dict(orientation="h", y=1.12, bgcolor="rgba(0,0,0,0)", font=dict(color="#94a3b8"))
+                       ))
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
@@ -64,19 +77,24 @@ def render():
                 </div>""", unsafe_allow_html=True)
 
         st.markdown('<div class="section-title">Confusion Matrix</div>', unsafe_allow_html=True)
-        z = [[412,18],[27,143]]
+        z = [[412, 18], [27, 143]]
         fig_cm = go.Figure(go.Heatmap(
-            z=z, x=["Legitimate","Fraudulent"], y=["Legitimate","Fraudulent"],
-            colorscale=[[0,"#0d1117"],[1,"#6366f1"]],
+            z=z, x=["Legitimate", "Fraudulent"], y=["Legitimate", "Fraudulent"],
+            colorscale=[[0, "#0d1117"], [1, "#6366f1"]],
             showscale=False,
             text=[[str(v) for v in row] for row in z],
             texttemplate="<b>%{text}</b>",
             textfont=dict(size=22, color="#ffffff"),
             hovertemplate="Actual: %{y}<br>Predicted: %{x}<br>Count: %{z}<extra></extra>"
         ))
-        chart_layout(fig_cm, height=280, margin=dict(l=60,r=20,t=20,b=60),
-                     xaxis=dict(title="Predicted", title_font=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")),
-                     yaxis=dict(title="Actual", autorange="reversed", title_font=dict(color="#94a3b8"), tickfont=dict(color="#94a3b8")))
+        apply_dark(fig_cm, height=280,
+                   margin=dict(l=60, r=20, t=20, b=60),
+                   extra=dict(
+                       xaxis=dict(title="Predicted", gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#94a3b8"), title_font=dict(color="#94a3b8")),
+                       yaxis=dict(title="Actual", autorange="reversed", gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#94a3b8"), title_font=dict(color="#94a3b8"))
+                   ))
         st.plotly_chart(fig_cm, use_container_width=True)
 
     with tabs[1]:
@@ -84,10 +102,10 @@ def render():
         col1, col2, col3 = st.columns(3)
         with col1:
             amount    = st.number_input("Amount ($)", min_value=0.0, value=250.0, step=10.0)
-            txn_type  = st.selectbox("Transaction Type", ["Purchase","ATM Withdrawal","Wire Transfer","Online Payment","International Transfer"])
+            txn_type  = st.selectbox("Transaction Type", ["Purchase", "ATM Withdrawal", "Wire Transfer", "Online Payment", "International Transfer"])
         with col2:
-            country   = st.selectbox("Country", ["US","CA","GB","FR","NG","RU","CN","BR","MX"])
-            card_type = st.selectbox("Card Type", ["Visa","Mastercard","Amex","Discover"])
+            country   = st.selectbox("Country", ["US", "CA", "GB", "FR", "NG", "RU", "CN", "BR", "MX"])
+            card_type = st.selectbox("Card Type", ["Visa", "Mastercard", "Amex", "Discover"])
         with col3:
             velocity_flag = st.checkbox("⚡ Velocity Flag")
             geo_mismatch  = st.checkbox("🌍 Geo Mismatch")
@@ -97,17 +115,17 @@ def render():
             score = 15
             if amount > 3000: score += 35
             elif amount > 500: score += 15
-            if country in ["NG","RU","CN"]: score += 25
-            if txn_type in ["Wire Transfer","International Transfer"]: score += 20
+            if country in ["NG", "RU", "CN"]: score += 25
+            if txn_type in ["Wire Transfer", "International Transfer"]: score += 20
             if velocity_flag: score += 15
             if geo_mismatch: score += 12
             if hour < 5 or hour > 22: score += 8
             score = min(score, 99)
 
-            level = "High" if score>=70 else "Medium" if score>=40 else "Low"
-            color = "#ef4444" if level=="High" else "#f59e0b" if level=="Medium" else "#10b981"
-            rec   = ("🚫 **Block immediately.** High fraud probability." if level=="High"
-                     else "⚠️ **Flag for review.** Multiple risk signals." if level=="Medium"
+            level = "High" if score >= 70 else "Medium" if score >= 40 else "Low"
+            color = "#ef4444" if level == "High" else "#f59e0b" if level == "Medium" else "#10b981"
+            rec   = ("🚫 **Block immediately.** High fraud probability." if level == "High"
+                     else "⚠️ **Flag for review.** Multiple risk signals." if level == "Medium"
                      else "✅ **Approve.** Low fraud risk.")
 
             st.markdown(f"""
@@ -133,40 +151,48 @@ def render():
             fig_g = go.Figure(go.Indicator(
                 mode="gauge+number", value=score,
                 gauge=dict(
-                    axis=dict(range=[0,100], tickfont=dict(color="#64748b"), tickcolor="#334155"),
+                    axis=dict(range=[0, 100], tickfont=dict(color="#64748b"), tickcolor="#334155"),
                     bar=dict(color=color, thickness=0.25),
                     bgcolor="#0d1117", bordercolor="#1e293b",
-                    steps=[dict(range=[0,40],  color="#0a2a1a"),
-                           dict(range=[40,70], color="#2a200a"),
-                           dict(range=[70,100],color="#2a0a0a")],
+                    steps=[
+                        dict(range=[0,  40], color="#0a2a1a"),
+                        dict(range=[40, 70], color="#2a200a"),
+                        dict(range=[70,100], color="#2a0a0a"),
+                    ],
                 ),
                 title=dict(text="Fraud Risk Score", font=dict(size=13, color="#64748b")),
                 number=dict(font=dict(size=44, family="JetBrains Mono", color=color))
             ))
-            fig_g.update_layout(height=260, margin=dict(l=30,r=30,t=50,b=10),
-                                paper_bgcolor=CARD, font=dict(family="Inter", color="#94a3b8"))
+            fig_g.update_layout(
+                height=260, margin=dict(l=30, r=30, t=50, b=10),
+                paper_bgcolor=CARD, font=dict(family="Inter", color="#94a3b8")
+            )
             st.plotly_chart(fig_g, use_container_width=True)
 
     with tabs[2]:
         st.markdown('<div class="section-title">Feature Importance Scores</div>', unsafe_allow_html=True)
         features = {
-            "Transaction Amount":0.231, "Country Risk Score":0.187,
-            "Transaction Type":0.143,   "Hour of Day":0.112,
-            "Velocity Flag":0.098,      "Geographic Mismatch":0.087,
-            "Card Type":0.072,          "Account Age":0.045,
-            "Merchant Category":0.025
+            "Transaction Amount": 0.231, "Country Risk Score": 0.187,
+            "Transaction Type":   0.143, "Hour of Day":        0.112,
+            "Velocity Flag":      0.098, "Geographic Mismatch":0.087,
+            "Card Type":          0.072, "Account Age":        0.045,
+            "Merchant Category":  0.025,
         }
-        fd = pd.DataFrame(list(features.items()), columns=["Feature","Importance"]).sort_values("Importance")
-        colors = [f"rgba(99,102,241,{0.4+v})" for v in fd["Importance"]]
+        fd = pd.DataFrame(list(features.items()), columns=["Feature", "Importance"]).sort_values("Importance")
+        bar_colors = [f"rgba(99,102,241,{0.4 + v})" for v in fd["Importance"]]
         fig = go.Figure(go.Bar(
             x=fd["Importance"], y=fd["Feature"], orientation="h",
-            marker=dict(color=colors, line=dict(color=CARD, width=1)),
+            marker=dict(color=bar_colors, line=dict(color=CARD, width=1)),
             text=[f"{v:.3f}" for v in fd["Importance"]],
             textposition="outside", textfont=dict(color="#e2e8f0", size=11),
             hovertemplate="<b>%{y}</b><br>Importance: %{x:.3f}<extra></extra>"
         ))
-        chart_layout(fig, height=380, margin=dict(l=10,r=70,t=20,b=10),
-                     xaxis=dict(gridcolor=GRID, title="Importance Score", title_font=dict(color="#94a3b8"), tickfont=dict(color="#64748b")),
-                     yaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8")))
+        apply_dark(fig, height=380,
+                   margin=dict(l=10, r=70, t=20, b=10),
+                   extra=dict(
+                       xaxis=dict(title="Importance Score", gridcolor=GRID, linecolor=GRID,
+                                  tickfont=dict(color="#64748b"), title_font=dict(color="#94a3b8")),
+                       yaxis=dict(showgrid=False, tickfont=dict(color="#94a3b8"))
+                   ))
         st.plotly_chart(fig, use_container_width=True)
         st.info("**Model:** Random Forest (500 estimators, max_depth=12) · Trained on 6 months of labeled data · SMOTE oversampling applied")
