@@ -7,136 +7,159 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Global CSS
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'IBM Plex Sans', sans-serif;
-    }
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #0f1923;
-        border-right: 1px solid #1e3048;
-    }
-    [data-testid="stSidebar"] * {
-        color: #c8d8e8 !important;
-    }
-    [data-testid="stSidebar"] .stRadio label {
-        color: #c8d8e8 !important;
-        font-size: 0.9rem;
-    }
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0d1117 0%, #0a0f1e 100%);
+    border-right: 1px solid rgba(99,102,241,0.15);
+}
+[data-testid="stSidebar"] * { color: #94a3b8 !important; }
 
-    /* Main background */
-    .main {
-        background-color: #f4f6f9;
-    }
+.main { background: #0a0f1e; }
+.block-container { padding-top: 1.5rem !important; }
 
-    /* Metric cards */
-    .metric-card {
-        background: white;
-        border-radius: 8px;
-        padding: 20px 24px;
-        border-left: 4px solid #1a56db;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    .metric-card.danger { border-left-color: #e02424; }
-    .metric-card.warning { border-left-color: #e3a008; }
-    .metric-card.success { border-left-color: #057a55; }
-    .metric-card h3 { font-size: 0.78rem; color: #6b7280; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 8px 0; }
-    .metric-card .value { font-size: 2rem; font-weight: 700; color: #111827; margin: 0; font-family: 'IBM Plex Mono', monospace; }
-    .metric-card .delta { font-size: 0.8rem; margin-top: 4px; color: #6b7280; }
-    .metric-card .delta.up { color: #e02424; }
-    .metric-card .delta.down { color: #057a55; }
+.kpi-card {
+    background: linear-gradient(135deg, #111827 0%, #1a2235 100%);
+    border-radius: 16px;
+    padding: 22px 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+}
+.kpi-card.indigo::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.kpi-card.red::before    { background: linear-gradient(90deg, #ef4444, #f87171); }
+.kpi-card.amber::before  { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.kpi-card.green::before  { background: linear-gradient(90deg, #10b981, #34d399); }
 
-    /* Section headers */
-    .section-title {
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #374151;
-        margin: 24px 0 12px 0;
-        padding-bottom: 8px;
-        border-bottom: 2px solid #e5e7eb;
-    }
+.kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+.kpi-value {
+    font-size: 2.1rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    color: #f1f5f9;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+.kpi-delta { font-size: 0.75rem; color: #64748b; }
+.kpi-delta.up   { color: #f87171; }
+.kpi-delta.down { color: #34d399; }
 
-    /* Alert badges */
-    .badge-high { background: #fde8e8; color: #c81e1e; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-medium { background: #fdf6b2; color: #9f580a; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-low { background: #def7ec; color: #03543f; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    margin: 28px 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(99,102,241,0.3), transparent);
+}
 
-    /* Hide default streamlit branding */
-    #MainMenu, footer { visibility: hidden; }
+.page-header {
+    background: linear-gradient(135deg, #111827 0%, #1a2235 100%);
+    border-radius: 16px;
+    padding: 24px 28px;
+    border: 1px solid rgba(99,102,241,0.15);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+}
+.page-header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+}
+.page-header h2 { font-size: 1.6rem; font-weight: 800; color: #f1f5f9; margin: 0 0 4px 0; }
+.page-header p  { font-size: 0.82rem; color: #64748b; margin: 0; }
 
-    /* Dataframe */
-    [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
+.brand-block { padding: 8px 0 24px 0; border-bottom: 1px solid rgba(99,102,241,0.15); margin-bottom: 20px; }
+.brand-name  { font-size: 1.25rem; font-weight: 800; color: #f1f5f9 !important; margin: 0; letter-spacing: -0.02em; }
+.brand-name span { color: #6366f1 !important; }
+.brand-sub   { font-size: 0.65rem; color: #334155 !important; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab"] { font-size: 0.88rem; font-weight: 500; }
+.stRadio > div { gap: 4px !important; }
+.stRadio label { border-radius: 8px !important; padding: 8px 12px !important; transition: all 0.2s; }
 
-    /* Buttons */
-    .stButton button {
-        background-color: #1a56db;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-family: 'IBM Plex Sans', sans-serif;
-        font-weight: 500;
-    }
-    .stButton button:hover { background-color: #1e429f; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+.badge-red   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+.badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+.badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
 
-    /* Sidebar logo area */
-    .sidebar-logo {
-        padding: 8px 0 24px 0;
-        border-bottom: 1px solid #1e3048;
-        margin-bottom: 20px;
-    }
-    .sidebar-logo h2 {
-        color: white !important;
-        font-size: 1.2rem;
-        font-weight: 700;
-        margin: 0;
-        letter-spacing: 0.02em;
-    }
-    .sidebar-logo span {
-        color: #3b82f6 !important;
-    }
-    .sidebar-subtitle {
-        color: #64748b !important;
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.alert-card { background: linear-gradient(135deg, #111827, #1a2235); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+.alert-card.high   { border-left: 3px solid #ef4444; }
+.alert-card.medium { border-left: 3px solid #f59e0b; }
+
+.insight-card { background: linear-gradient(135deg, #111827, #1a2235); border-radius: 12px; padding: 18px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+
+#MainMenu, footer, header { visibility: hidden; }
+[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
+
+.stButton button {
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white; border: none; border-radius: 8px;
+    font-weight: 600; font-family: 'Inter', sans-serif; transition: all 0.2s;
+}
+.stButton button:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+.stTabs [data-baseweb="tab"] { font-weight: 500; font-size: 0.85rem; }
+.stTabs [data-baseweb="tab-list"] { border-bottom: 1px solid rgba(255,255,255,0.06); }
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar navigation
 with st.sidebar:
     st.markdown("""
-    <div class="sidebar-logo">
-        <h2>🛡️ Fraud<span>Shield</span></h2>
-        <div class="sidebar-subtitle">Detection & Analytics Platform</div>
+    <div class="brand-block">
+        <div class="brand-name">🛡️ Fraud<span>Shield</span></div>
+        <div class="brand-sub">Detection & Analytics Platform</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("**NAVIGATION**")
-    page = st.radio(
-        "",
-        ["📊  Overview", "🔍  Transaction Monitor", "🤖  ML Detection", "⚠️  Alert Center", "📈  Analytics"],
-        label_visibility="collapsed"
-    )
+    st.markdown('<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;color:#334155;text-transform:uppercase;margin-bottom:8px;">Navigation</div>', unsafe_allow_html=True)
+
+    page = st.radio("", [
+        "📊  Overview",
+        "🔍  Transaction Monitor",
+        "🤖  ML Detection",
+        "⚠️  Alert Center",
+        "📈  Analytics"
+    ], label_visibility="collapsed")
 
     st.markdown("---")
-    st.markdown("**FILTERS**")
+    st.markdown('<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;color:#334155;text-transform:uppercase;margin-bottom:8px;">Filters</div>', unsafe_allow_html=True)
     date_range = st.selectbox("Time Period", ["Last 24 Hours", "Last 7 Days", "Last 30 Days", "Last Quarter"])
     risk_filter = st.multiselect("Risk Level", ["High", "Medium", "Low"], default=["High", "Medium", "Low"])
-    st.markdown("---")
-    st.caption("FraudShield v2.1.0 · Last sync: 2 min ago")
 
-# Route pages
+    st.markdown("---")
+    st.markdown('<div style="font-size:0.7rem;color:#1e293b;">FraudShield v2.1 · <span style="color:#6366f1;">Live</span> · Synced 2m ago</div>', unsafe_allow_html=True)
+
 page_name = page.split("  ")[1]
 
 if page_name == "Overview":
